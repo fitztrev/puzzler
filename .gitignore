@@ -1,0 +1,7 @@
+__pycache__
+.ipynb_checkpoints
+
+puzzles_*.csv
+puzzles_*.pgn
+
+zuliprc*

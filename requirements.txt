@@ -1,0 +1,3 @@
+importlib-metadata
+zulip
+zulip_bots
