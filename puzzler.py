@@ -58,19 +58,28 @@ Version: [{version()}]({commit_url}) {last_commit()}
             f"```spoiler script logs\n{result.stdout}\n{result.stderr}```",
         )
 
-        with open(f"{filename}.csv", "r") as original:
-            data = original.read()
-            first_line = "white,black,game id,fen,ply,moves,cp,generator"
-            with open(f"{filename}.csv", "w") as modified:
-                modified.write(first_line + "\n")
-                modified.write(data)
+        puzzle_count = 0
 
-            with open(f"{filename}.csv", "rb") as fp:
-                result = client.upload_file(fp)
-                bot_handler.send_reply(
-                    message, f"[{os.path.basename(result['uri'])}]({result['uri']})"
-                )
-                self.add_reaction(client, message["id"], "check")
+        csv_filename = f"{filename}.csv"
+        if os.path.exists(csv_filename):
+            with open(csv_filename, "r") as original:
+                data = original.read()
+                puzzle_count = len(data.splitlines())
+                first_line = "white,black,game id,fen,ply,moves,cp,generator"
+                with open(csv_filename, "w") as modified:
+                    modified.write(first_line + "\n")
+                    modified.write(data)
+
+                with open(csv_filename, "rb") as fp:
+                    result = client.upload_file(fp)
+                    bot_handler.send_reply(
+                        message, f"[{os.path.basename(result['uri'])}]({result['uri']})"
+                    )
+
+        bot_handler.send_reply(
+            message, f"{puzzle_count} puzzle{'s'[:puzzle_count^1]} found in that PGN"
+        )
+        self.add_reaction(client, message["id"], "check")
 
     def add_reaction(self, client: zulip.Client, message_id: int, emoji: str) -> None:
         # zulip api seems flaky about adding reactions to just-created messages
