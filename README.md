@@ -14,7 +14,7 @@ Test docker build locally:
 
 ```bash
 docker build -t zulip-puzzler .
-docker run -it --rm -v ~/Downloads/zuliprc:/zuliprc zulip-puzzler
+docker run -it --rm -v ./zuliprc-puzzler:/zuliprc zulip-puzzler
 ```
 
 Push to Docker Hub:

@@ -1,3 +1,4 @@
+import csv
 from datetime import datetime
 from typing import Any, Dict
 from zulip_bots.lib import BotHandler
@@ -7,6 +8,7 @@ import subprocess
 import time
 import zulip
 from config import last_commit, version, zuliprc
+from pgn import generate_pgn
 
 
 class PuzzlerHandler:
@@ -64,26 +66,59 @@ Version: [{version()}]({commit_url}) {last_commit()}
         if os.path.exists(csv_filename):
             with open(csv_filename, "r") as original:
                 data = original.read()
-                puzzle_count = len(data.splitlines())
-                first_line = "white,black,game id,fen,ply,moves,cp,generator"
+                cols = [
+                    "event",
+                    "white",
+                    "black",
+                    "white title",
+                    "black title",
+                    "white elo",
+                    "black elo",
+                    "game id",
+                    "fen",
+                    "ply",
+                    "moves",
+                    "cp",
+                    "generator",
+                ]
+
                 with open(csv_filename, "w") as modified:
-                    modified.write(first_line + "\n")
+                    modified.write(','.join(cols) + "\n")
                     modified.write(data)
+                    puzzle_count = len(data.splitlines())
+                    bot_handler.send_reply(
+                        message, f"{puzzle_count} puzzle{'s'[:puzzle_count^1]} found in that PGN"
+                    )
 
                 with open(csv_filename, "rb") as fp:
                     result = client.upload_file(fp)
                     bot_handler.send_reply(
-                        message, f"[{os.path.basename(result['uri'])}]({result['uri']})"
+                        message, f":attachment: [CSV report]({result['uri']})"
                     )
 
-        bot_handler.send_reply(
-            message, f"{puzzle_count} puzzle{'s'[:puzzle_count^1]} found in that PGN"
-        )
+                reader = csv.DictReader(open(csv_filename))
+                study_pgn = generate_pgn(reader)
+                with open(f"{filename}.pgn", "w") as fp:
+                    fp.write(study_pgn)
+                with open(f"{filename}.pgn", "rb") as fp:
+                    result = client.upload_file(fp)
+                    instructions = [
+                        'Lichess > New Study',
+                        'On "New chapter" dialog, "PGN" tab > "Choose File", choose this pgn file',
+                        'Set "Analysis Mode" to "Interactive lesson"',
+                        'Set "Orientation" to "Automatic"',
+                        'Click "Create Chapter"',
+                    ]
+                    bot_handler.send_reply(
+                        message, f":attachment: [PGN puzzles]({result['uri']})\nTo create a puzzle pack:\n" + "\n".join(instructions)
+                    )
+
+
         self.add_reaction(client, message["id"], "check")
 
+
     def add_reaction(self, client: zulip.Client, message_id: int, emoji: str) -> None:
-        # zulip api seems flaky about adding reactions to just-created messages
-        time.sleep(1)
+        time.sleep(1) # zulip api seems flaky about adding reactions to just-created messages
         client.add_reaction(
             {
                 "message_id": message_id,
