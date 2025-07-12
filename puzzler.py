@@ -55,10 +55,11 @@ Version: [{version()}]({commit_url}) {last_commit()}
             text=True,
         )
 
-        bot_handler.send_reply(
+        resp = bot_handler.send_reply(
             message,
             f"```spoiler script logs\n{result.stdout}\n{result.stderr}```",
         )
+        print(resp)
 
         puzzle_count = 0
 
@@ -86,15 +87,17 @@ Version: [{version()}]({commit_url}) {last_commit()}
                     modified.write(','.join(cols) + "\n")
                     modified.write(data)
                     puzzle_count = len(data.splitlines())
-                    bot_handler.send_reply(
+                    resp = bot_handler.send_reply(
                         message, f"{puzzle_count} puzzle{'s'[:puzzle_count^1]} found in that PGN"
                     )
+                    print(resp)
 
                 with open(csv_filename, "rb") as fp:
                     result = client.upload_file(fp)
-                    bot_handler.send_reply(
+                    resp = bot_handler.send_reply(
                         message, f":attachment: [CSV report]({result['uri']})"
                     )
+                    print(resp)
 
                 reader = csv.DictReader(open(csv_filename))
                 study_pgn = generate_pgn(reader)
@@ -109,10 +112,12 @@ Version: [{version()}]({commit_url}) {last_commit()}
                         'Set "Orientation" to "Automatic"',
                         'Click "Create Chapter"',
                     ]
-                    bot_handler.send_reply(
+                    resp = bot_handler.send_reply(
                         message, f":attachment: [PGN puzzles]({result['uri']})\nTo create a puzzle pack:\n" + "\n".join(instructions)
                     )
-
+                    print(resp)
+        else:
+            print(f"CSV file {csv_filename} not found, no puzzles generated.")
 
         self.add_reaction(client, message["id"], "check")
 
